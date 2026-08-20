@@ -22,8 +22,10 @@ from ..quant.model_surgery import router_modules
 class RouterLogitCapture:
     """Collects per-layer router logits for the current forward pass."""
 
-    def __init__(self, model: torch.nn.Module, dtype: torch.dtype = torch.float32):
+    def __init__(self, model: torch.nn.Module, k: int | None = None,
+                 dtype: torch.dtype = torch.float32):
         self.routers = router_modules(model)
+        self.k = k if k is not None else getattr(model.config, "num_experts_per_tok", None)
         self.n_layers = len(self.routers)
         self.dtype = dtype
         self.buffers: list[torch.Tensor | None] = [None] * self.n_layers

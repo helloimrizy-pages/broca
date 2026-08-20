@@ -32,5 +32,6 @@ def load_model_and_tokenizer(
     except TypeError:  # transformers < 5 spelling
         model = AutoModelForCausalLM.from_pretrained(str(path), torch_dtype=dtype)
     model.eval()
+    model.requires_grad_(False)
     model.to(device)
     return model, tokenizer, path
