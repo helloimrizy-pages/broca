@@ -83,6 +83,26 @@ def main(argv=None) -> int:
     W(f"{'bf16':<9}  {'1.0000':>7}  {f'{k}.000/{k}':>7}  {'1.0000':>6}  {'1.0000':>9}  "
       f"{'0.0000':>11}  {ppl0:>7.4f}  {'16.000':>6}  {mem_bf16:>5.2f}")
     W("")
+    W("SENSITIVITY OF THE MEAN TO LAYER 0")
+    W("-" * 78)
+    W("  The layer-0 router reads the hidden state before any expert has acted, so its top-k")
+    W("  set cannot move under expert quantisation and it enters the mean as an exact 1.0.")
+    W("  Excluding it is the stricter reading of the kill criterion.")
+    rows = []
+    for b, r in sorted(by_bits.items(), key=lambda kv: int(kv[0])):
+        per_layer = r["per_layer"]
+        js = [s["mean_jaccard"] for s in per_layer]
+        rows.append([
+            f"{b}-bit",
+            f"{sum(js) / len(js):.4f}",
+            f"{sum(js[1:]) / len(js[1:]):.4f}",
+            f"{min(js):.4f}",
+            f"L{js.index(min(js)):02d}",
+            f"{max(js[1:]):.4f}",
+        ])
+    W(table(["setting", "mean (all layers)", "mean (excl. L00)", "min layer", "at",
+             "max (excl. L00)"], rows))
+    W("")
     W("  Jaccard is m/(2k-m) for an overlap of m out of k; a single expert swap at k=8 gives")
     W("  7/9 = 0.7778.  'identical' is the fraction of (token, layer) pairs whose top-k set is")
     W("  exactly preserved.  'logit shift' is the mean per-token L2 change in router logits")

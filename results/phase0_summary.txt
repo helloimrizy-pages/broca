@@ -1,0 +1,177 @@
+PHASE 0 - ROUTING SHIFT UNDER EXPERT QUANTISATION
+==============================================================================
+model                allenai/OLMoE-1B-7B-0924
+commit               ec9fdc811b5df96f2a1dbb8f85717cbbb6590c7a  (dirty=False)
+seed                 0
+device               mps (arm)
+wall clock           775.2 s
+torch/transformers   2.13.0 / 5.15.1
+
+architecture         16 layers, 64 experts/layer, top-8 routing, hidden 2048, expert intermediate 1024
+parameters           6,919,161,856 total, 6,442,450,944 in experts (93.11%)
+calibration          100 sequences x 2048 tokens from allenai/c4:en/c4-validation.00000-of-00008.json.gz
+                     sha256 6f17bf9c1bdfad0a
+quantisation         RTN, asymmetric, group 64 along the input dim, experts only (router/attention/embeddings/norms stay bf16)
+
+OVERALL AGREEMENT WITH THE bf16 ROUTER
+------------------------------------------------------------------------------
+setting  Jaccard  overlap   top-1  identical  logit shift   C4 ppl  bits/w   GiB
+-------  -------  -------  ------  ---------  -----------  -------  ------  ----
+2-bit     0.7796  6.928/8  0.7406     0.2698       2.0926  18.6461   2.500  2.76
+3-bit     0.8982  7.531/8  0.8858     0.5805       0.8196  12.0615   3.500  3.51
+4-bit     0.9440  7.745/8  0.9405     0.7565       0.4164  11.3519   4.500  4.26
+bf16        1.0000  8.000/8  1.0000     1.0000       0.0000  11.1548  16.000  12.89
+
+SENSITIVITY OF THE MEAN TO LAYER 0
+------------------------------------------------------------------------------
+  The layer-0 router reads the hidden state before any expert has acted, so its top-k
+  set cannot move under expert quantisation and it enters the mean as an exact 1.0.
+  Excluding it is the stricter reading of the kill criterion.
+setting  mean (all layers)  mean (excl. L00)  min layer   at  max (excl. L00)
+-------  -----------------  ----------------  ---------  ---  ---------------
+2-bit               0.7796            0.7649     0.7367  L05           0.8000
+3-bit               0.8982            0.8914     0.8750  L05           0.9091
+4-bit               0.9440            0.9402     0.9301  L05           0.9545
+
+  Jaccard is m/(2k-m) for an overlap of m out of k; a single expert swap at k=8 gives
+  7/9 = 0.7778.  'identical' is the fraction of (token, layer) pairs whose top-k set is
+  exactly preserved.  'logit shift' is the mean per-token L2 change in router logits
+  divided by the bf16 logit standard deviation at that layer.
+
+OVERLAP DISTRIBUTION AT 2-BIT  (fraction of token-layer pairs by overlap count)
+------------------------------------------------------------------------------
+overlap      0/8     1/8     2/8     3/8     4/8     5/8     6/8     7/8     8/8
+--------  ------  ------  ------  ------  ------  ------  ------  ------  ------
+fraction  0.0000  0.0001  0.0003  0.0013  0.0076  0.0481  0.2154  0.4576  0.2698
+
+OVERLAP DISTRIBUTION AT 3-BIT  (fraction of token-layer pairs by overlap count)
+------------------------------------------------------------------------------
+overlap      0/8     1/8     2/8     3/8     4/8     5/8     6/8     7/8     8/8
+--------  ------  ------  ------  ------  ------  ------  ------  ------  ------
+fraction  0.0000  0.0000  0.0001  0.0002  0.0005  0.0027  0.0414  0.3746  0.5805
+
+OVERLAP DISTRIBUTION AT 4-BIT  (fraction of token-layer pairs by overlap count)
+------------------------------------------------------------------------------
+overlap      0/8     1/8     2/8     3/8     4/8     5/8     6/8     7/8     8/8
+--------  ------  ------  ------  ------  ------  ------  ------  ------  ------
+fraction  0.0000  0.0000  0.0000  0.0001  0.0002  0.0005  0.0091  0.2336  0.7565
+
+PER-LAYER AGREEMENT
+------------------------------------------------------------------------------
+  2-bit
+layer  Jaccard  overlap   top-1  identical  logit shift
+-----  -------  -------  ------  ---------  -----------
+L00     1.0000    8.000  1.0000     1.0000       0.0000
+L01     0.8000    7.049  0.8669     0.2812       1.6023
+L02     0.7805    6.947  0.8089     0.2397       1.9099
+L03     0.7542    6.803  0.7994     0.1982       1.9410
+L04     0.7495    6.784  0.7392     0.1770       2.2844
+L05     0.7367    6.710  0.7241     0.1607       2.5525
+L06     0.7408    6.732  0.7259     0.1660       2.5259
+L07     0.7383    6.717  0.6964     0.1668       2.3431
+L08     0.7490    6.774  0.6714     0.1854       2.2592
+L09     0.7787    6.935  0.6730     0.2381       2.1459
+L10     0.7914    6.998  0.7239     0.2730       2.0546
+L11     0.7720    6.895  0.6884     0.2336       2.2777
+L12     0.7799    6.936  0.6970     0.2514       2.2974
+L13     0.7631    6.839  0.6879     0.2346       2.4315
+L14     0.7689    6.872  0.6679     0.2411       2.4163
+L15     0.7705    6.864  0.6790     0.2699       2.4394
+
+  3-bit
+layer  Jaccard  overlap   top-1  identical  logit shift
+-----  -------  -------  ------  ---------  -----------
+L00     1.0000    8.000  1.0000     1.0000       0.0000
+L01     0.9091    7.585  0.9458     0.6128       0.5682
+L02     0.8938    7.513  0.9152     0.5557       0.8273
+L03     0.8898    7.494  0.9152     0.5435       0.7744
+L04     0.8850    7.472  0.8928     0.5235       0.9107
+L05     0.8750    7.421  0.8834     0.4939       1.0535
+L06     0.8770    7.430  0.8806     0.5009       1.0109
+L07     0.8764    7.428  0.8652     0.4979       0.9476
+L08     0.8843    7.466  0.8546     0.5262       0.8656
+L09     0.8988    7.536  0.8528     0.5777       0.8240
+L10     0.9045    7.562  0.8733     0.6014       0.8031
+L11     0.8944    7.514  0.8592     0.5633       0.8731
+L12     0.8994    7.538  0.8638     0.5813       0.8787
+L13     0.8927    7.505  0.8669     0.5617       0.9101
+L14     0.8948    7.515  0.8490     0.5683       0.9055
+L15     0.8954    7.515  0.8549     0.5798       0.9616
+
+  4-bit
+layer  Jaccard  overlap   top-1  identical  logit shift
+-----  -------  -------  ------  ---------  -----------
+L00     1.0000    8.000  1.0000     1.0000       0.0000
+L01     0.9545    7.794  0.9748     0.7983       0.2689
+L02     0.9404    7.730  0.9576     0.7390       0.4262
+L03     0.9371    7.715  0.9555     0.7257       0.4028
+L04     0.9366    7.713  0.9438     0.7228       0.4715
+L05     0.9301    7.681  0.9390     0.7005       0.5406
+L06     0.9305    7.683  0.9368     0.7019       0.5254
+L07     0.9318    7.690  0.9298     0.7050       0.4790
+L08     0.9352    7.706  0.9221     0.7195       0.4404
+L09     0.9442    7.747  0.9222     0.7562       0.4190
+L10     0.9476    7.763  0.9334     0.7709       0.4069
+L11     0.9420    7.737  0.9265     0.7472       0.4441
+L12     0.9455    7.753  0.9286     0.7619       0.4449
+L13     0.9415    7.734  0.9298     0.7461       0.4572
+L14     0.9436    7.744  0.9215     0.7546       0.4550
+L15     0.9428    7.739  0.9267     0.7542       0.4807
+
+DOES THE ROUTING SHIFT EXPLAIN THE QUALITY LOSS?
+------------------------------------------------------------------------------
+  Per-token routing disagreement (expert swaps summed over all layers) against the
+  per-token increase in NLL.  A near-zero correlation means the shift is real but is
+  not the mechanism behind the perplexity loss.
+
+setting  swaps/token  no-swap frac     dNLL  pearson r     r^2  spearman  partial r   tokens
+-------  -----------  ------------  -------  ---------  ------  --------  ---------  -------
+2-bit     17.145/128        0.0000  +0.5138    +0.0074  0.0001   -0.0299    +0.0031  204,700
+3-bit      7.504/128        0.0004  +0.0782    +0.0462  0.0021   -0.0037    +0.0437  204,700
+4-bit      4.074/128        0.0219  +0.0175    +0.0464  0.0021   -0.0019    +0.0456  204,700
+
+  2-bit: mean NLL increase by routing-disagreement decile
+mean swaps       n  mean dNLL  median dNLL  bf16 NLL
+----------  ------  ---------  -----------  --------
+10.02       16,592    +0.5693      +0.2874     2.589
+12.00       10,929    +0.5209      +0.2589     2.538
+13.55       32,126    +0.5219      +0.2545     2.533
+15.00       19,391    +0.5043      +0.2382     2.489
+16.00       20,047    +0.4932      +0.2289     2.497
+17.00       19,295    +0.5010      +0.2215     2.417
+18.00       17,339    +0.4874      +0.2030     2.380
+19.45       28,012    +0.4894      +0.1799     2.340
+21.45       18,114    +0.5066      +0.1688     2.222
+25.90       22,855    +0.5511      +0.1407     2.170
+
+  3-bit: mean NLL increase by routing-disagreement decile
+mean swaps       n  mean dNLL  median dNLL  bf16 NLL
+----------  ------  ---------  -----------  --------
+2.60        11,883    +0.0699      +0.0233     2.610
+4.00        15,231    +0.0621      +0.0167     2.574
+5.00        23,319    +0.0697      +0.0190     2.533
+6.00        29,226    +0.0732      +0.0191     2.504
+7.00        30,903    +0.0734      +0.0165     2.442
+8.00        27,929    +0.0733      +0.0125     2.392
+9.00        22,419    +0.0706      +0.0113     2.365
+10.00       16,467    +0.0832      +0.0109     2.246
+12.67       27,323    +0.1166      +0.0077     2.158
+
+  4-bit: mean NLL increase by routing-disagreement decile
+mean swaps       n  mean dNLL  median dNLL  bf16 NLL
+----------  ------  ---------  -----------  --------
+0.00         4,491    +0.0126      +0.0021     2.580
+1.00        16,109    +0.0145      +0.0020     2.502
+2.00        30,234    +0.0135      +0.0016     2.506
+3.00        38,782    +0.0132      +0.0016     2.445
+4.00        38,099    +0.0139      +0.0012     2.416
+5.00        30,165    +0.0166      +0.0011     2.403
+6.00        20,907    +0.0158      +0.0007     2.348
+8.19        25,913    +0.0391      +0.0005     2.224
+
+KILL CRITERION
+------------------------------------------------------------------------------
+  threshold: mean Jaccard at 3-bit >= 0.88 means routing is
+  close to invariant under quantisation and the B-ROCA premise is weak on this model.
+  measured: 0.8982
+  verdict:  TRIPPED - routing is near-invariant
